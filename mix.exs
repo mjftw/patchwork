@@ -20,6 +20,8 @@ defmodule Patchwork.MixProject do
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
-    []
+    [
+      {:stream_data, "~> 0.6", only: [:test, :dev]}
+    ]
   end
 end
