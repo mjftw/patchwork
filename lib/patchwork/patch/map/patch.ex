@@ -8,6 +8,7 @@ defimpl Patchwork.Patch, for: Map do
   defstruct added: %{}, modified: %{}, removed: []
 
   alias Patchwork.Patch.PatchError
+  alias Patchwork.Patch
 
   @doc """
   Computes the difference of two Maps.
@@ -32,16 +33,23 @@ defimpl Patchwork.Patch, for: Map do
   """
   @impl true
   @spec diff(map(), map()) :: __MODULE__.t()
-  def diff(from, to) do
+  def diff(from, to) when is_map(from) and is_map(to) do
     Enum.reduce(
       Map.merge(from, to),
       %__MODULE__{added: %{}, modified: %{}, removed: []},
-      fn {k, v}, %__MODULE__{added: added, modified: modified, removed: removed} ->
+      fn {k, to_v}, %__MODULE__{added: added, modified: modified, removed: removed} ->
         {added, modified} =
           case Map.fetch(from, k) do
-            {:ok, value} when value === v -> {added, modified}
-            {:ok, _} -> {added, Map.put(modified, k, v)}
-            :error -> {Map.put(added, k, v), modified}
+            {:ok, from_v} when from_v === to_v ->
+              {added, modified}
+
+            {:ok, from_v} ->
+              modified_v = with_impl(from_v, to_v, &Patch.diff/2)
+
+              {added, Map.put(modified, k, modified_v)}
+
+            :error ->
+              {Map.put(added, k, to_v), modified}
           end
 
         removed =
@@ -64,7 +72,8 @@ defimpl Patchwork.Patch, for: Map do
         added: added,
         modified: modified,
         removed: removed
-      }) do
+      })
+      when is_map(from) do
     add_result = validate_added(from, added)
     modify_result = validate_modified(from, modified)
     remove_result = validate_removed(from, removed)
@@ -79,16 +88,19 @@ defimpl Patchwork.Patch, for: Map do
         end
       )
 
-    case Enum.empty?(errors) do
-      true ->
-        {:ok,
-         from
-         |> Map.merge(modified)
-         |> Map.merge(added)
-         |> Map.drop(removed)}
-
+    with true <- Enum.empty?(errors),
+         {:ok, modified} <- apply_nested_patches(from, modified) do
+      {:ok,
+       from
+       |> Map.merge(modified)
+       |> Map.merge(added)
+       |> Map.drop(removed)}
+    else
       false ->
         {:error, PatchError.exception(errors)}
+
+      {:error, error} ->
+        {:error, error}
     end
   end
 
@@ -138,6 +150,43 @@ defimpl Patchwork.Patch, for: Map do
     case missing_keys do
       [] -> :ok
       _ -> {:error, "Attempted to remove keys that are not present: #{inspect(missing_keys)}"}
+    end
+  end
+
+  defp apply_nested_patches(from, modified) do
+    case Enum.reduce_while(modified, %{}, fn {k, to_v}, updated ->
+           from_v = Map.fetch!(from, k)
+
+           modify_result = patch_if_impl(from_v, to_v)
+
+           case modify_result do
+             {:ok, modified_v} -> {:cont, Map.put(updated, k, modified_v)}
+             {:error, error} -> {:halt, {:error, error}}
+           end
+         end) do
+      {:error, error} -> {:error, error}
+      updated -> {:ok, updated}
+    end
+  end
+
+  defp with_impl(from, to, fun) when is_function(fun, 2) do
+    case {Patch.impl_for(from), Patch.impl_for(to)} do
+      {impl, impl} when not is_nil(impl) -> fun.(from, to)
+      _ -> to
+    end
+  end
+
+  defp patch_if_impl(from, patch_or_value) do
+    case Patch.impl_for(from) do
+      impl when not is_nil(impl) ->
+        try do
+          Patch.apply(from, patch_or_value)
+        rescue
+          _e in [FunctionClauseError, Protocol.UndefinedError] -> {:ok, patch_or_value}
+        end
+
+      _ ->
+        {:ok, patch_or_value}
     end
   end
 end

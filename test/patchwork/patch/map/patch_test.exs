@@ -14,6 +14,53 @@ defmodule Patchwork.Patch.Map.PatchTest do
     end
   end
 
+  test "applying a diff always results in the correct value, with nested patches" do
+    check all(
+            map1 <- nested_map_generator(),
+            map2 <- nested_map_generator()
+          ) do
+      patch = Patchwork.Patch.diff(map1, map2)
+      assert {:ok, map2} == Patchwork.Patch.apply(map1, patch)
+    end
+  end
+
+  describe "diff/2" do
+    test "should create nested patches when modified field has same from and to type with Patch implementation" do
+      map1 = %{a: 1, b: 2, c: %{x: 1, y: 2}}
+      map2 = %{a: 0, b: 2, c: %{x: 2, y: 2, z: 3}}
+
+      assert %Patchwork.Patch.Map{
+               added: %{},
+               modified: %{
+                 a: 0,
+                 c: %Patchwork.Patch.Map{added: %{z: 3}, modified: %{x: 2}, removed: []}
+               },
+               removed: []
+             } == Patchwork.Patch.diff(map1, map2)
+    end
+
+    test "should create deeply nested patches when modified field has same from and to type with Patch implementation" do
+      map1 = %{a: 1, b: 2, c: %{x: 1, y: %{j: 9, k: 8}}}
+      map2 = %{a: 0, b: 2, c: %{x: 2, y: %{j: 10}}, z: 3}
+
+      assert %Patchwork.Patch.Map{
+               added: %{z: 3},
+               modified: %{
+                 a: 0,
+                 c: %Patchwork.Patch.Map{
+                   added: %{},
+                   modified: %{
+                     x: 2,
+                     y: %Patchwork.Patch.Map{added: %{}, modified: %{j: 10}, removed: [:k]}
+                   },
+                   removed: []
+                 }
+               },
+               removed: []
+             } == Patchwork.Patch.diff(map1, map2)
+    end
+  end
+
   describe "apply/2" do
     test "should error if adding a keys that already exist" do
       assert {:error,
@@ -74,6 +121,8 @@ defmodule Patchwork.Patch.Map.PatchTest do
       assert message =~ "Attempted to update key(s) with unchanged value: [:b]"
       assert message =~ "Attempted to remove keys that are not present: [:f]"
     end
+
+    # TODO: Add tests for nested apply
   end
 
   defp map_generator do
@@ -84,6 +133,28 @@ defmodule Patchwork.Patch.Map.PatchTest do
               b: StreamData.binary(),
               c: StreamData.boolean(),
               d: StreamData.constant(0)
+            })
+        ) do
+      map
+    end
+  end
+
+  defp nested_map_generator do
+    gen all(
+          map <-
+            StreamData.fixed_map(%{
+              a:
+                StreamData.one_of([
+                  StreamData.optional_map(%{
+                    a: StreamData.integer(),
+                    b: StreamData.binary(),
+                    c: StreamData.boolean(),
+                    d: StreamData.constant(0)
+                  }),
+                  StreamData.boolean()
+                ]),
+              b: StreamData.boolean(),
+              c: StreamData.constant(0)
             })
         ) do
       map
