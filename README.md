@@ -1,8 +1,8 @@
 # Patchwork
 
-Patchwork is a library for finding the minimal differences between two data structures (a patch), and applying that patch to get an updated version.
+Patchwork is Elixir library for calculating the difference between two data structures, and applying that difference as a patch. Think git patches for for Elixir data structures.
 
-This is useful when transferring data between distributed processes, as it allows you to transfer only the difference, rather than the whole data structure.
+This is useful when transferring data in a distributed system, as it allows you to transfer only the difference, rather than the whole data structure.
 
 E.g.
 
