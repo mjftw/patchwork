@@ -1,4 +1,4 @@
-defmodule Patchwork.Patch.Map.PatchTest do
+defmodule Patchwork.Patch.MapTest do
   use ExUnit.Case
   use ExUnitProperties
   alias Patchwork.Patch.Map, as: MapPatch
