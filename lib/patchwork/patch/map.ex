@@ -8,6 +8,7 @@ defimpl Patchwork.Patch, for: Map do
   defstruct added: %{}, modified: %{}, removed: []
 
   alias Patchwork.Patch.PatchError
+  alias Patchwork.Patch.Utils
   alias Patchwork.Patch
 
   @doc """
@@ -170,14 +171,14 @@ defimpl Patchwork.Patch, for: Map do
   end
 
   defp with_impl(from, to, fun) when is_function(fun, 2) do
-    case {Patch.impl_for(from), Patch.impl_for(to)} do
+    case {Utils.non_any_impl_for(from), Utils.non_any_impl_for(to)} do
       {impl, impl} when not is_nil(impl) -> fun.(from, to)
       _ -> to
     end
   end
 
   defp patch_if_impl(from, patch_or_value) do
-    case Patch.impl_for(from) do
+    case Utils.non_any_impl_for(from) do
       impl when not is_nil(impl) ->
         try do
           Patch.apply(from, patch_or_value)

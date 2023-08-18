@@ -5,6 +5,8 @@ defprotocol Patchwork.Patch do
   """
   @type patch_type :: any()
 
+  @fallback_to_any true
+
   alias Patchwork.Patch.PatchError
 
   @spec diff(t, t) :: patch_type
