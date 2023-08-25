@@ -12,6 +12,6 @@ defprotocol Patchwork.Patch do
   @spec diff(t, t) :: patch_type
   def diff(value_a, value_b)
 
-  @spec apply(t, patch_type) :: {:ok, t() | {:error, PatchError.t()}}
+  @spec apply(t, patch_type) :: {:ok, t()} | {:error, PatchError.t()}
   def apply(value, patch)
 end
