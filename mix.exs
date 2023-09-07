@@ -39,7 +39,8 @@ defmodule Patchwork.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:stream_data, "~> 0.6", only: [:test, :dev]}
+      {:stream_data, "~> 0.6", only: [:test, :dev]},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
 end
