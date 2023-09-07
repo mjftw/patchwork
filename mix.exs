@@ -6,10 +6,13 @@ defmodule Patchwork.MixProject do
       app: :patchwork,
       version: "0.1.0",
       elixir: "~> 1.14",
+      build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       description: description(),
       package: package(),
-      deps: deps()
+      deps: deps(),
+      name: "Patchwork",
+      source_url: "https://github.com/mjftw/patchwork"
     ]
   end
 
