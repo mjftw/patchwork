@@ -17,8 +17,7 @@ assert {:ok, map2} == Patchwork.Patch.apply(map1, patch)
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `patchwork` to your list of dependencies in `mix.exs`:
+The package can be installed by adding `patchwork` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
@@ -28,6 +27,4 @@ def deps do
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/patchwork>.
+Documentation can be found [in Hex](https://hexdocs.pm/patchwork/):
